@@ -9,14 +9,27 @@ const socket = socketio('http://localhost:3000', {
 })
 
 function subscribeToNewPlaces (subscribeFunction) {
-  socket.on('new-place', subscribeFunction)
+  socket.on('place', subscribeFunction)
+}
+
+function subscribeToNewSchedules (subscribeFunction) {
+  socket.on('schedule', subscribeFunction)
 }
 
 function connect (latitude, longitude, doctrine) {
+
   socket.io.opts.query = {
     latitude,
     longitude,
     doctrine
+  }
+  socket.connect()
+}
+
+function connectSchedule (place_id) {
+
+  socket.io.opts.query = {
+    place_id
   }
   socket.connect()
 }
@@ -29,6 +42,8 @@ function disconnect () {
 
 export {
   connect,
+  connectSchedule,
   disconnect,
-  subscribeToNewPlaces
+  subscribeToNewPlaces,
+  subscribeToNewSchedules
 }

@@ -61,6 +61,7 @@ function Radar ({ navigation }) {
   }
 
   async function loadPlaces () {
+
     const { latitude, longitude } = currentRegion
 
     const response = await api.get('/places', {
@@ -72,6 +73,7 @@ function Radar ({ navigation }) {
     })
 
     setPlaces(response.data)
+
     setupWebsocket()
   }
 
