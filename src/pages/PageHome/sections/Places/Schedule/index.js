@@ -1,42 +1,93 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { Image, View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native'
 
-import { Image, View, Text, TouchableOpacity, SafeAreaView, Animated, ScrollView } from 'react-native'
+import api from '../../../../../services/api'
+import { connectSchedule, disconnect, subscribeToNewSchedules } from '../../../../../services/socket'
 
 import { AntDesign } from '@expo/vector-icons'
 
 import styles from './styles'
 
 //const Schedule = (props) => {
-
 function Schedule ({ navigation }) {
 
-  const schedule = navigation.getParam('schedule')
+  const place = navigation.getParam('schedule')
 
-  //const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
-  //const scrollView = React.createRef()
+  const [currentPlace, setCurrentPlace] = useState('')
+  const [days, setDays] = useState([])  
 
-  let scrollView
+  useEffect(() => {
 
-  let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
+    function loadCurrentPlace () {
 
-  let myTest = true
+      const place_id = place.id
+      
+      setCurrentPlace({
+        place_id
+      })
+    }
 
-  handleScroll = () => {
-    console.log('********* apenas uma vez')    
+    loadCurrentPlace()
+  }, [place])
+
+  useEffect(() => {
+    subscribeToNewSchedules(day => setDays([...days, day]))
+
+    if (days) {
+      console.log('subscribeToNewSchedules looking for days')
+      console.log(days)
+    }
+  }, [days])
+
+  function setupWebsocket () {
+    disconnect()
+
+    const { place_id } = currentPlace
+
+    connectSchedule(place_id)
   }
 
+  async function loadSchedule () {
+
+    const { place_id } = currentPlace
+
+    const response = await api.get('/schedule', {
+      params: {
+        place_id
+      }
+    })
+  
+    setDays(response.data)
+    setupWebsocket()
+
+    if (days) {
+      console.log('loadSchedule looking for days')
+      console.log(days)
+    }
+  }  
+
+  if (!currentPlace) {
+    return null
+  }
+
+  let scrollView
+  let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
+
+  // handleScroll = () => {
+  //   console.log('***** handleScroll **** apenas uma vez')    
+  // }
+
   handleDay = (btn) => {
-    console.log('************************')
     btn = btn * 78
     scrollView.scrollTo({x: btn, animated: true})
-    console.log('**')
   }
 
   toggleFavoriteTimes = (index) => {
     favoriteTimes[index] = !favoriteTimes[index]
-
     console.log(favoriteTimes)
   }
+
+  loadSchedule()
 
   return (
     <View style={styles.pageContainer}>
@@ -73,11 +124,10 @@ function Schedule ({ navigation }) {
           horizontal={true}
           showsHorizontalScrollIndicator={false}
           scrollToOverflowEnabled={true}
-          // onScroll={handleScroll}
           scrollEventThrottle={0}
           snapToInterval={78}
 
-          onMomentumScrollEnd={handleScroll}
+          //onMomentumScrollEnd={handleScroll}
 
           //ref={scrollView}
           ref={(ref) => scrollView = ref}
@@ -94,7 +144,7 @@ function Schedule ({ navigation }) {
               onPress={() => { handleDay(0) }}
 
             >
-              <Text style={[styles.btnTextLite]} color='red'>7</Text>
+              <Text style={[styles.btnTextLite]} color='red'>{new Date().getDate()}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -163,7 +213,7 @@ function Schedule ({ navigation }) {
         <ScrollView style={styles.stack}>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.wkndOpensAt}</Text>
+            <Text style={styles.hour}>{place.wkndOpensAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(0) }}
@@ -177,7 +227,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysOpensAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysOpensAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(1) }}
@@ -191,7 +241,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(2) }}
@@ -205,7 +255,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(3) }}
@@ -219,7 +269,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(4) }}
@@ -233,7 +283,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(5) }}
@@ -247,7 +297,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(6) }}
@@ -261,7 +311,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(7) }}
@@ -275,7 +325,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(8) }}
@@ -289,7 +339,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(9) }}
@@ -303,7 +353,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(10) }}
@@ -317,7 +367,7 @@ function Schedule ({ navigation }) {
           </View>
 
           <View style={styles.itemRow}>
-            <Text style={styles.hour}>{schedule.workingDaysClosesAt}</Text>
+            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
             <TouchableOpacity
               style={[styles.btn, styles.sessionBtn]}
               onPress={() => { toggleFavoriteTimes(11) }}
