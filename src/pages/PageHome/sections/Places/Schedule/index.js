@@ -13,23 +13,65 @@ function Schedule ({ navigation }) {
 
   const place = navigation.getParam('schedule')
 
-  const [currentPlace, setCurrentPlace] = useState('')
-  const [days, setDays] = useState([])  
+  const [days, setDays] = useState(false)
+
+  const [currentPlace, setCurrentPlace] = useState(false)
+
+  //const [eventos, setEventos] = useState(false)
 
   useEffect(() => {
 
-    function loadCurrentPlace () {
+    const place_id = place.id
+    setCurrentPlace({ place_id })
 
+  }, [place])
+
+  useEffect(() => {
+
+    if(currentPlace) {
+      loadSchedule()
+    }
+    
+  }, [currentPlace])
+
+  // async function getDaysOfEvents (places) {
+    
+  //   const response = await api.get('/schedule', {
+  //     params: { places.id }
+  //   }, [places])
+  //   console.log(response.data)
+  // }
+
+  // useEffect(() => {
+  //   console.log('3: useEffect for EVENTOS na lista Schedule')
+  //   // schedules that match place_id
+  //   if(eventos){
+  //     console.log(eventos[0].name)
+  //     console.log(eventos[1].name)
+  //     console.log(eventos[2].name)
+  //     console.log(eventos[3].name)
+  //     console.log(' ')
+  //   }
+
+  // }, [eventos])
+
+  // useEffect(() => {
+  //   console.log('DAYS not being used but useEffect just ran it. When and why?')
+  // }, [days])
+
+
+  /*
+  useEffect(() => {
+    function loadCurrentPlace () {
       const place_id = place.id
-      
       setCurrentPlace({
         place_id
       })
     }
-
     loadCurrentPlace()
-  }, [place])
+  }, [place]) */
 
+  /*
   useEffect(() => {
     subscribeToNewSchedules(day => setDays([...days, day]))
 
@@ -37,13 +79,17 @@ function Schedule ({ navigation }) {
       console.log('subscribeToNewSchedules looking for days')
       console.log(days)
     }
-  }, [days])
+  }, [days]) */
+
+  /*
+  useEffect(async () => {
+    await subscribeToNewSchedules(day => setDays([...days, day]))
+    loadSchedule()
+  }, [days])*/
 
   function setupWebsocket () {
-    disconnect()
-
+    disconnect()  
     const { place_id } = currentPlace
-
     connectSchedule(place_id)
   }
 
@@ -56,18 +102,16 @@ function Schedule ({ navigation }) {
         place_id
       }
     })
-  
-    setDays(response.data)
+    //setDays(response.data)
+
+    console.log(response.data)
+    loadDaysOfMonths(response.data.daysOfMonths)
+
     setupWebsocket()
+  }
 
-    if (days) {
-      console.log('loadSchedule looking for days')
-      console.log(days)
-    }
-  }  
-
-  if (!currentPlace) {
-    return null
+  function loadDaysOfMonths (daysOfMonths) {
+    console.log(daysOfMonths)
   }
 
   let scrollView
@@ -84,10 +128,7 @@ function Schedule ({ navigation }) {
 
   toggleFavoriteTimes = (index) => {
     favoriteTimes[index] = !favoriteTimes[index]
-    console.log(favoriteTimes)
   }
-
-  loadSchedule()
 
   return (
     <View style={styles.pageContainer}>
