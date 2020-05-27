@@ -2,117 +2,90 @@ import React, { useState, useEffect } from 'react'
 import { Image, View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native'
 
 import api from '../../../../../services/api'
-import { connectSchedule, disconnect, subscribeToNewSchedules } from '../../../../../services/socket'
+import { connectRituals, disconnect, subscribeToNewRituals } from '../../../../../services/socket'
 
 import { AntDesign } from '@expo/vector-icons'
 
+import arrayBuilder from '../../../../../utils/arrayBuilder'
+
 import styles from './styles'
 
-//const Schedule = (props) => {
 function Schedule ({ navigation }) {
 
-  const place = navigation.getParam('schedule')
+  const place = navigation.getParam('rituals')
 
   const [days, setDays] = useState(false)
 
-  const [currentPlace, setCurrentPlace] = useState(false)
-
-  //const [eventos, setEventos] = useState(false)
-
   useEffect(() => {
-
-    const place_id = place.id
-    setCurrentPlace({ place_id })
-
+    console.log('uuuuuuuuuuuuuuuseee effect..........')
+    loadRituals()
+    
   }, [place])
 
-  useEffect(() => {
-
-    if(currentPlace) {
-      loadSchedule()
-    }
-    
-  }, [currentPlace])
-
-  // async function getDaysOfEvents (places) {
-    
-  //   const response = await api.get('/schedule', {
-  //     params: { places.id }
-  //   }, [places])
-  //   console.log(response.data)
-  // }
-
-  // useEffect(() => {
-  //   console.log('3: useEffect for EVENTOS na lista Schedule')
-  //   // schedules that match place_id
-  //   if(eventos){
-  //     console.log(eventos[0].name)
-  //     console.log(eventos[1].name)
-  //     console.log(eventos[2].name)
-  //     console.log(eventos[3].name)
-  //     console.log(' ')
-  //   }
-
-  // }, [eventos])
-
-  // useEffect(() => {
-  //   console.log('DAYS not being used but useEffect just ran it. When and why?')
-  // }, [days])
-
-
-  /*
-  useEffect(() => {
-    function loadCurrentPlace () {
-      const place_id = place.id
-      setCurrentPlace({
-        place_id
-      })
-    }
-    loadCurrentPlace()
-  }, [place]) */
-
-  /*
-  useEffect(() => {
-    subscribeToNewSchedules(day => setDays([...days, day]))
-
-    if (days) {
-      console.log('subscribeToNewSchedules looking for days')
-      console.log(days)
-    }
-  }, [days]) */
-
-  /*
-  useEffect(async () => {
-    await subscribeToNewSchedules(day => setDays([...days, day]))
-    loadSchedule()
-  }, [days])*/
 
   function setupWebsocket () {
     disconnect()  
-    const { place_id } = currentPlace
-    connectSchedule(place_id)
+    connectRituals(place.id)
   }
+  
+  async function loadRituals () {
 
-  async function loadSchedule () {
+    console.log('entrar aqui apenas quando abre a página - certo?')
 
-    const { place_id } = currentPlace
-
-    const response = await api.get('/schedule', {
+    const response = await api.get('/rituals', {
       params: {
-        place_id
+        place_id: place.id
       }
     })
-    //setDays(response.data)
 
-    console.log(response.data)
-    loadDaysOfMonths(response.data.daysOfMonths)
+    let diasArr = []
+    let today = new Date().getDate()
+    let noEventsToday = false
 
+    for (let d=1; d<=31;d++){
+
+      let dia = { ofMonth: false, isToday: false, rituals: [] }
+
+      for (let i=0; i<response.data.length; i++){
+
+        let daysOfThisRitual = arrayBuilder(response.data[i].daysOfMonths)
+  
+        for (let x=0; x<daysOfThisRitual.length; x++){
+  
+          if(daysOfThisRitual[x] === d) {
+
+            if(d === today){
+              dia.isToday = true
+            }
+            dia.ofMonth = d
+            dia.rituals.push({
+              ritual_id: response.data[i].id,
+              title: response.data[i].title,
+              paragraph: response.data[i].paragraph,
+              time: response.data[i].hoursOfDays,
+              hours: response.data[i].sessionLength,
+              price: response.data[i].chargeValue
+            })
+
+            diasArr.push(dia)
+          }
+          
+          if (d === today && daysOfThisRitual[x] !== d && !noEventsToday) {
+
+            noEventsToday = true
+
+            dia.ofMonth = d
+            dia.isToday = true
+            diasArr.push(dia)
+          }
+        }
+      }
+    }
+    setDays(diasArr)
     setupWebsocket()
   }
-
-  function loadDaysOfMonths (daysOfMonths) {
-    console.log(daysOfMonths)
-  }
+  
+  
 
   let scrollView
   let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
@@ -121,16 +94,24 @@ function Schedule ({ navigation }) {
   //   console.log('***** handleScroll **** apenas uma vez')    
   // }
 
-  handleDay = (btn) => {
+  const handleDay = (btn) => {
+
     btn = btn * 78
     scrollView.scrollTo({x: btn, animated: true})
   }
 
-  toggleFavoriteTimes = (index) => {
+  const toggleFavoriteTimes = (index) => {
     favoriteTimes[index] = !favoriteTimes[index]
   }
 
+  if (!days) {
+    console.log('render blocked')
+    return null
+  }
+  console.log('now rendering')
+
   return (
+
     <View style={styles.pageContainer}>
       <View style={styles.lineMark}></View>
       <View style={styles.headerDay}>
@@ -167,9 +148,7 @@ function Schedule ({ navigation }) {
           scrollToOverflowEnabled={true}
           scrollEventThrottle={0}
           snapToInterval={78}
-
           //onMomentumScrollEnd={handleScroll}
-
           //ref={scrollView}
           ref={(ref) => scrollView = ref}
           //ref={scroller => {myScroller = scroller}}
@@ -179,66 +158,19 @@ function Schedule ({ navigation }) {
           }}
           */
         >
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay]}
-              // onPress={handleDay}
-              onPress={() => { handleDay(0) }}
+            {days.map((day, index) => (
 
-            >
-              <Text style={[styles.btnTextLite]} color='red'>{new Date().getDate()}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay]}
-              onPress={() => { handleDay(1) }}
-            >
-              <Text style={[styles.btnTextLite]} color='#fff'>8</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay, styles.inative]}
-              onPress={() => { handleDay(2) }}
-            >
-              <Text style={[styles.btnTextLite, styles.inative]} color='#fff'>9</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay, styles.inative]}
-              onPress={() => { handleDay(3) }}
-            >
-              <Text style={[styles.btnTextLite, styles.inative]} color='#fff'>10</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay]}
-              onPress={() => { handleDay(4) }}
-            >
-              <Text style={[styles.btnTextLite]} color='#fff'>11</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay, styles.inative]}
-              onPress={() => { handleDay(5) }}
+              <TouchableOpacity
+                style={[styles.btn, styles.btnDay]}
+                onPress={() => { handleDay(index) }}
+                key={index}
               >
-              <Text style={[styles.btnTextLite, styles.inative]} color='#fff'>12</Text>
-            </TouchableOpacity>
+                <Text style={[styles.btnTextLite]} color='#fff'>{day.ofMonth}</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay, styles.inative]}
-              onPress={() => { handleDay(6) }}
-            >
-              <Text style={[styles.btnTextLite, styles.inative]} color='#fff'>13</Text>
-            </TouchableOpacity>
+            ))}
 
-            <TouchableOpacity
-              style={[styles.btn, styles.btnDay]}
-              onPress={() => { handleDay(7) }}
-            >
-              <Text style={[styles.btnTextLite]} color='#fff'>14</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.blockedArea}>
-            </TouchableOpacity>
+            <TouchableOpacity style={styles.blockedArea}></TouchableOpacity>
 
         </ScrollView>
       </SafeAreaView>

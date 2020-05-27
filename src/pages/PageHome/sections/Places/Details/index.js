@@ -90,7 +90,7 @@ function Details ({ navigation }) {
               style={[styles.btnBig, styles.spaceCadet]} 
               onPress={() => {
                 ctx.setNavBackwards(true, 'Details', navigation)
-                navigation.navigate('Schedule', { schedule: details })
+                navigation.navigate('Schedule', { rituals: details })
               }}
             >
               <AntDesign name='calendar' size={20} color='#000' />
