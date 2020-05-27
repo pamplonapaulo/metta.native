@@ -16,6 +16,10 @@ function subscribeToNewSchedules (subscribeFunction) {
   socket.on('schedule', subscribeFunction)
 }
 
+function subscribeToNewRituals (subscribeFunction) {
+  socket.on('rituals', subscribeFunction)
+}
+
 function connect (latitude, longitude, doctrine) {
 
   socket.io.opts.query = {
@@ -26,10 +30,18 @@ function connect (latitude, longitude, doctrine) {
   socket.connect()
 }
 
-function connectSchedule (place_id) {
+// function connectSchedule (place_id) {
+
+//   socket.io.opts.query = {
+//     place_id
+//   }
+//   socket.connect()
+// }
+
+function connectRituals (id) {
 
   socket.io.opts.query = {
-    place_id
+    place_id: id
   }
   socket.connect()
 }
@@ -42,8 +54,9 @@ function disconnect () {
 
 export {
   connect,
-  connectSchedule,
+  connectRituals,
   disconnect,
   subscribeToNewPlaces,
-  subscribeToNewSchedules
+  subscribeToNewSchedules,
+  subscribeToNewRituals
 }
