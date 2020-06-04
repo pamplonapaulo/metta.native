@@ -13,6 +13,10 @@ export default StyleSheet.create({
     height: 60,
     backgroundColor: '#ffa500',
 
+    borderColor: '#4b0082',
+    borderBottomWidth: 1,
+
+
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 10 }, // change this for more shadow
     shadowOpacity: .2,
