@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Image, View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native'
 
 import api from '../../../../../services/api'
@@ -7,6 +7,8 @@ import { connectRituals, disconnect, subscribeToNewRituals } from '../../../../.
 import { AntDesign } from '@expo/vector-icons'
 
 import arrayBuilder from '../../../../../utils/arrayBuilder'
+import hourSanitizer from '../../../../../utils/hourSanitizer'
+import getDaysOfDate from '../../../../../utils/getDaysOfDate'
 
 import styles from './styles'
 
@@ -14,101 +16,272 @@ function Schedule ({ navigation }) {
 
   const place = navigation.getParam('rituals')
 
-  const [days, setDays] = useState(false)
+  const years = [(new Date().getFullYear() - 1), new Date().getFullYear(), (new Date().getFullYear() + 1)]
+
+  const [currentYear, setCurrentYear] = useState(1)
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [days, setDays] = useState(getDaysOfDate(new Date().getFullYear(), new Date().getMonth()))
+  const [currentDay, setCurrentDay] = useState(new Date().getDate())
+  const [currentSchedule, setCurrentSchedule] = useState(false)
+
+  const [scrollViewYears, setScrollViewYears] = useState()
+  const [scrollViewMonths, setScrollViewMonths] = useState()
+  const [scrollViewDays, setScrollViewDays] = useState()
+
+  const isInitialMount = useRef(true)
+
+  let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
+  
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ]
+
+  const [currentDisplay, setCurrentDisplay] = useState(new Date().getDate() + '/' + months[new Date().getMonth()] + '/' + years[1])
 
   useEffect(() => {
-    console.log('uuuuuuuuuuuuuuuseee effect..........')
-    loadRituals()
-    
-  }, [place])
+    console.log('2 currentYear >>>> ' + currentYear)
 
+    if(!isInitialMount.current){
+      handleMonth(0)
+    }
+
+  }, [currentYear])
+
+  useEffect(() => {
+    console.log('3 currentMonth >>>> ' + currentMonth)
+
+  }, [currentMonth])
+
+  useEffect(() => {
+    console.log('4 days >>>> ' + JSON.stringify(days))
+
+    if(!isInitialMount.current){
+
+      setTimeout(() => {      
+        handleDay(0)
+      }, 5000)
+    }
+  }, [days])
+
+  useEffect(() => {
+    console.log('5 currentDay >>>> ' + currentDay)
+  }, [currentDay])
+
+  useEffect(() => {
+    console.log('6 currentDisplay >>>> ' + currentDisplay)
+    console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
+
+    setTimeout(() => {      
+      console.log('timeout display ?')
+      console.log('6 currentDisplay >>>> ' + currentDisplay)
+      console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
+    }, 5000)
+
+    getCurrentSchedule()
+
+  }, [currentDisplay])
+
+  useEffect(() => {
+    console.log('7 currentSchedule >>>> ' + typeof currentSchedule)
+
+    //subscribeToNewRituals(ritual => setCurrentSchedule([...currentSchedule, ritual]))
+  }, [currentSchedule])
+
+  // useEffect(() => {
+  //   subscribeToNewPlaces(place => setPlaces([...places, place]))
+  // }, [places])
+
+  useEffect(() => {
+    if(isInitialMount.current && scrollViewYears !== undefined){
+      console.log('8 scrollViewYears >>>> ' + typeof scrollViewYears)
+      console.log('handle YEAR on call now')
+      setTimeout(() => { handleYear(currentYear) }, 500)
+    }
+  }, [scrollViewYears])
+
+  useEffect(() => {
+    if(isInitialMount.current && scrollViewMonths !== undefined){
+      console.log('9 scrollViewMonths >>>> ' + typeof scrollViewMonths)
+      console.log('handle MONTH on call now')
+      setTimeout(() => { handleMonth(currentMonth) }, 500)
+    }
+  }, [scrollViewMonths])
+
+  useEffect(() => {
+    if(isInitialMount.current && scrollViewDays !== undefined){
+      console.log('10 scrollViewDays >>>> ' + typeof scrollViewDays)
+      console.log('handle DAY on call now')
+      setTimeout(() => { handleDay(currentDay - 1) }, 500)      
+      setTimeout(() => { isInitialMount.current = false }, 1000)
+    }
+  }, [scrollViewDays])
 
   function setupWebsocket () {
     disconnect()  
     connectRituals(place.id)
   }
-  
-  async function loadRituals () {
 
-    console.log('entrar aqui apenas quando abre a página - certo?')
+  async function getCurrentSchedule() {
 
+    console.log('por favor uma chamada apenas')
+
+    let isDayEmpity = true
+    
     const response = await api.get('/rituals', {
       params: {
         place_id: place.id
       }
     })
 
-    let diasArr = []
-    let today = new Date().getDate()
-    let noEventsToday = false
+    const monthMatch = (element) => element == currentMonth;
+    const dayMatch = (element) => element == currentDay;
 
-    for (let d=1; d<=31;d++){
+    let schedule = []
 
-      let dia = { ofMonth: false, isToday: false, rituals: [] }
+    for (let y=0; y<response.data.length; y++){
 
-      for (let i=0; i<response.data.length; i++){
+      let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
+      let responseDays = arrayBuilder(response.data[y].daysOfMonths)
 
-        let daysOfThisRitual = arrayBuilder(response.data[i].daysOfMonths)
-  
-        for (let x=0; x<daysOfThisRitual.length; x++){
-  
-          if(daysOfThisRitual[x] === d) {
+      if (responseMonths.some(monthMatch) && responseDays.some(dayMatch)){
 
-            if(d === today){
-              dia.isToday = true
-            }
-            dia.ofMonth = d
-            dia.rituals.push({
-              ritual_id: response.data[i].id,
-              title: response.data[i].title,
-              paragraph: response.data[i].paragraph,
-              time: response.data[i].hoursOfDays,
-              hours: response.data[i].sessionLength,
-              price: response.data[i].chargeValue
-            })
+        isDayEmpity = false
 
-            diasArr.push(dia)
-          }
-          
-          if (d === today && daysOfThisRitual[x] !== d && !noEventsToday) {
-
-            noEventsToday = true
-
-            dia.ofMonth = d
-            dia.isToday = true
-            diasArr.push(dia)
-          }
-        }
+        schedule.push({
+          ritual_id: response.data[y].id,
+          display: 'on',
+          title: response.data[y].title,
+          paragraph: response.data[y].paragraph,
+          time: hourSanitizer(response.data[y].hoursOfDays),
+          hours: response.data[y].sessionLength,
+          price: response.data[y].chargeValue
+        })
       }
     }
-    setDays(diasArr)
-    setupWebsocket()
-  }
-  
-  
 
-  let scrollView
-  let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
+    if(isDayEmpity){
+      schedule.push({
+        ritual_id: 'fake',
+        display: 'off',
+        title: 'Sem sessões',
+        paragraph: '',
+        time: '',
+        hours: '',
+        price: ''    
+      })
+    }
+    setupWebsocket()
+    setCurrentSchedule(schedule)
+    //return schedule
+  }
 
   // handleScroll = () => {
   //   console.log('***** handleScroll **** apenas uma vez')    
   // }
 
-  const handleDay = (btn) => {
+  const handleYear = (btn) => {
+    console.log(' ')
+    console.log(' ')
+    console.log(' ')
+    console.log('ANO: ')
+    console.log('index = ' + btn)
+    console.log('name = ' + years[btn])
 
-    btn = btn * 78
-    scrollView.scrollTo({x: btn, animated: true})
+    if(!isInitialMount.current){
+      console.log('year got pressed')
+      setCurrentYear(btn)
+      months[new Date().getMonth()]
+      setCurrentMonth(1)
+      setDays(getDaysOfDate(currentYear, 0))
+      setCurrentDay(1)
+      setCurrentDisplay((1) + '/' + months[0] + '/' + years[currentYear])
+    }
+    console.log('positioning the scroll')
+    handleScrollViews(scrollViewYears, btn)
+    handleScrollViews(scrollViewMonths, btn)
+
+  }
+
+  const handleMonth = (btn) => {
+    console.log(' ')
+    console.log(' ')
+    console.log(' ')
+    console.log('MÊS: ' + months[btn])
+
+    if(!isInitialMount.current){
+      console.log('month got pressed')
+      setCurrentMonth(btn)
+      setDays(getDaysOfDate(currentYear, btn))
+      setCurrentDay(1)
+      setCurrentDisplay(1 + '/' + months[btn] + '/' + years[currentYear])
+      // setCurrentDay(1)
+      // setDays()
+    }
+    console.log('positioning the scroll')
+    handleScrollViews(scrollViewMonths, btn)
+  }
+
+  const handleDay = (btn) => {
+    console.log(' ')
+    console.log(' ')
+    console.log(' ')
+    console.log('DIA: ' + days[btn])
+
+    if(!isInitialMount.current){
+      console.log('day got pressed')
+      setCurrentDay(btn + 1)
+      setCurrentDisplay((btn + 1) + '/' + months[currentMonth] + '/' + years[currentYear])
+
+    }
+    console.log('positioning the scroll')
+    handleScrollViews(scrollViewDays, btn)
+  }
+
+  const handleScrollViews = (scrollViewElement, index) => {
+
+    index = index * 78
+    scrollViewElement.scrollTo({x: index, animated: true})
+    console.log('Are we good?')
+    console.log(' ')
+
+    // if(!isInitialMount.current){
+    //   setTimeout(() => { updateDateDisplay() }, 3000)
+    // }
+  }
+
+  const updateDateDisplay = () => {
+
+    console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
+    setCurrentDisplay(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
+
+    // if(currentDisplay !== currentDay + '/' + months[currentMonth] + '/' + years[currentYear]){
+    //   setCurrentDisplay(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
+    // } else {
+    //   console.log('prevented unecessary change on date display')
+    //   console.log(currentDisplay)
+    // }
   }
 
   const toggleFavoriteTimes = (index) => {
     favoriteTimes[index] = !favoriteTimes[index]
   }
 
-  if (!days) {
-    console.log('render blocked')
+  if (!currentSchedule) {
+    console.log('*********************** return null')
     return null
   }
-  console.log('now rendering')
+  console.log('*********************** chegou aqui??????')
 
   return (
 
@@ -124,21 +297,85 @@ function Schedule ({ navigation }) {
               styles.textShadow,
               styles.headerDayTop
             ]}
-            >Monday</Text>
-          </View>
-
-          <View style={[styles.row, styles.right]}>
-            <Text style={[
-              styles.right,
-              styles.widthFull,
-              styles.textShadow,
-              styles.headerDayBottom
-            ]}
-            >07/05/20</Text>
+          >{currentDisplay}</Text>
           </View>
 
         </View>
       </View>
+
+      <SafeAreaView>
+        <ScrollView
+          style={styles.years}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          scrollToOverflowEnabled={true}
+          scrollEventThrottle={0}
+          snapToInterval={78}
+          //onMomentumScrollEnd={handleScroll}
+          //ref={scrollView}
+          // ref={(ref) => scrollView = ref}
+          ref={(ref) => setScrollViewYears(ref)}
+
+          //ref={scroller => {myScroller = scroller}}
+          /*
+          ref={scroller => {
+            this.scroller = scroller;
+          }}
+          */
+        >
+            {years.map((year, index) => (
+
+              <TouchableOpacity
+                style={[styles.btn, styles.btnDay, ]}
+                onPress={() => { handleYear(index, year) }}
+                key={index}
+              >
+                <Text style={[styles.btnTextLite]} color='#fff'>{year}</Text>
+              </TouchableOpacity>
+              )
+            )}
+
+            <TouchableOpacity style={styles.blockedArea}></TouchableOpacity>
+
+        </ScrollView>
+      </SafeAreaView>
+
+      <SafeAreaView>
+        <ScrollView
+          style={styles.months}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          scrollToOverflowEnabled={true}
+          scrollEventThrottle={0}
+          snapToInterval={78}
+          //onMomentumScrollEnd={handleScroll}
+          //ref={scrollView}
+          // ref={(ref) => scrollView = ref}
+          ref={(ref) => setScrollViewMonths(ref)}
+
+          //ref={scroller => {myScroller = scroller}}
+          /*
+          ref={scroller => {
+            this.scroller = scroller;
+          }}
+          */
+        >
+            {months.map((month, index) => (
+
+              <TouchableOpacity
+                style={[styles.btn, styles.btnDay, ]}
+                onPress={() => { handleMonth(index, index) }}
+                key={index}
+              >
+                <Text style={[styles.btnTextLite]} color='#fff'>{month}</Text>
+              </TouchableOpacity>
+              )
+            )}
+
+            <TouchableOpacity style={styles.blockedArea}></TouchableOpacity>
+
+        </ScrollView>
+      </SafeAreaView>
 
       <SafeAreaView>
         <ScrollView
@@ -150,7 +387,9 @@ function Schedule ({ navigation }) {
           snapToInterval={78}
           //onMomentumScrollEnd={handleScroll}
           //ref={scrollView}
-          ref={(ref) => scrollView = ref}
+          // ref={(ref) => scrollView = ref}
+          ref={(ref) => setScrollViewDays(ref)}
+
           //ref={scroller => {myScroller = scroller}}
           /*
           ref={scroller => {
@@ -162,196 +401,55 @@ function Schedule ({ navigation }) {
 
               <TouchableOpacity
                 style={[styles.btn, styles.btnDay]}
-                onPress={() => { handleDay(index) }}
+                onPress={() => { handleDay(index, day) }}
                 key={index}
               >
-                <Text style={[styles.btnTextLite]} color='#fff'>{day.ofMonth}</Text>
+                <Text style={[styles.btnTextLite]} color='#fff'>{day}</Text>
               </TouchableOpacity>
-
-            ))}
+              )
+            )}
 
             <TouchableOpacity style={styles.blockedArea}></TouchableOpacity>
 
         </ScrollView>
       </SafeAreaView>
-
-      <Image
+      
+      {/* <Image
         style={styles.coverImg}
         source={{ uri: 'https://patrimonioespiritual.files.wordpress.com/2016/01/img_1565.jpg?w=1180&h=786' }}
-      />
+      /> */}
 
+      {/* <View style={styles.coverImg} /> */}
+
+      <View style={styles.bg}/>
 
       <SafeAreaView>
 
         <ScrollView style={styles.stack}>
 
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.wkndOpensAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(0) }}
-            >
-              <AntDesign name={favoriteTimes[0] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
+          {currentSchedule.map((ritual, index) => (
 
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysOpensAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(1) }}
+            <View
+              style={styles.itemRow}
+              key={index}
             >
-              <AntDesign name={favoriteTimes[1] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
+              <Text style={styles.hour}>{ritual.time}</Text>
+              <TouchableOpacity
+                style={ritual.display === 'off' ? [styles.btnOff] : [styles.btn, styles.sessionBtn]}
+                onPress={() => { toggleFavoriteTimes(0) }}
+              >
+                <AntDesign
+                  name={favoriteTimes[0] ? 'star' : 'staro'}
+                  size={20}
+                  color={ritual.display === 'on' ? '#fff' : 'transparent'}
+                />
+              </TouchableOpacity>
+              <View style={styles.sessionText}>
+                <Text style={styles.name}>{ritual.title}</Text>
+                <Text style={styles.description}>{ritual.paragraph}</Text>
+              </View>
             </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(2) }}
-            >
-              <AntDesign name={favoriteTimes[2] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(3) }}
-            >
-              <AntDesign name={favoriteTimes[3] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(4) }}
-            >
-              <AntDesign name={favoriteTimes[4] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(5) }}
-            >
-              <AntDesign name={favoriteTimes[5] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(6) }}
-            >
-              <AntDesign name={favoriteTimes[6] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(7) }}
-            >
-              <AntDesign name={favoriteTimes[7] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(8) }}
-            >
-              <AntDesign name={favoriteTimes[8] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(9) }}
-            >
-              <AntDesign name={favoriteTimes[9] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(10) }}
-            >
-              <AntDesign name={favoriteTimes[10] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
-
-          <View style={styles.itemRow}>
-            <Text style={styles.hour}>{place.workingDaysClosesAt}</Text>
-            <TouchableOpacity
-              style={[styles.btn, styles.sessionBtn]}
-              onPress={() => { toggleFavoriteTimes(11) }}
-            >
-              <AntDesign name={favoriteTimes[11] ? 'star' : 'staro'} size={20} color='#fff' />
-            </TouchableOpacity>
-            <View style={styles.sessionText}>
-              <Text style={styles.name}>Meditação do Sol</Text>
-              <Text style={styles.description}>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum adipisci, laboriosam quo iste maiores quisquam.</Text>
-            </View>
-          </View>
+          ))}
 
         </ScrollView>
 
@@ -361,3 +459,43 @@ function Schedule ({ navigation }) {
 }
 
 export default Schedule
+
+/*
+Review meditation scale length: each 5 minutes, from 5 minutes to 2 hours.
+Create Avatars' levels: You are a Jedi, Pai Mei, Jiraia, Doctor Strange, Vision (Marvel), Mestre dos Magos, Castanhera, ...
+
+Section "Be a guru":
+Like a social media news feed, but strict to share just audio guided meditations. So anyone can pick any shared meditation and set it to use on the next sitting.
+This meditation object may include:
+  Title
+  Short text presentation
+  Length: how long last the session
+  Doctrines related: which possible tradition beliefs a user may be in touch while guided by this audio.
+  Guru link, so you can follow
+  Audio file itself
+
+Social media section might include some sub-sections (or sub-tags):
+
+  Guided Meditations:
+    explained above.
+
+  No fake:
+    contents with this tag will be sujbected to verification and users may report if looks like fake.
+    a source from external media broadcast should be provided to endorce the post.
+
+  Social warnings (also always 'No Fake'):
+    possible negative contents that users feel like everyone must acknowledge of it.
+    also no fake warnings, so same criteria for 'No Fake' tag: source must be provided and users may contest it's truth by reporting to review.
+
+  Free belief:
+    spiritual contents not subjected to fact checking.
+
+
+
+
+
+
+
+
+
+*/
