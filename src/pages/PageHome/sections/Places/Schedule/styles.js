@@ -10,15 +10,30 @@ export default StyleSheet.create({
 
   lineMark: {
     height: '100%',
-    borderColor: '#737380',
+    // borderColor: '#737380',
+    borderColor: '#000',
     borderRightWidth: 1,
     width: 84,
     position: 'absolute',
+    zIndex: 2
   },
 
   coverImg: {
     width: '100%',
-    height: 180
+    // height: 180,
+    height: 225,
+    zIndex: 1,
+    opacity: 0.5
+  },
+
+  bg: {
+    width: '100%',
+    // height: 180,
+    height: 225,
+    backgroundColor: 'green',
+    zIndex: 1,
+    opacity: 1
+
   },
 
   textShadow: {
@@ -97,6 +112,22 @@ export default StyleSheet.create({
     //transform: [{ translateX: (-78 * 2) }]
   },
 
+  months: {
+    paddingLeft: 55,
+    paddingBottom: 75,
+    top: 80,
+    zIndex: 99,
+    position: 'absolute'
+  },
+
+  years: {
+    paddingLeft: 55,
+    paddingBottom: 75,
+    top: 10,
+    zIndex: 99,
+    position: 'absolute'
+  },
+
   btn: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -116,6 +147,18 @@ export default StyleSheet.create({
     shadowRadius: 10
   },
 
+  btnOff: {
+    borderWidth: 1,
+    borderColor: 'transparent',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    backgroundColor: 'transparent',
+  },
+
   btnDay: {
     marginRight: 20
   },
@@ -132,10 +175,6 @@ export default StyleSheet.create({
     borderWidth: 0
   },
 
-  btnHour: {
-
-  },
-
   btnTextLite: {
     color: '#000',
     fontSize: 19,
@@ -149,12 +188,14 @@ export default StyleSheet.create({
   stack: {
     paddingTop: 80,
     paddingBottom: 130,
-    flexDirection: 'column'
+    flexDirection: 'column',
+    zIndex: 99
   },
 
   itemRow: {
     flexDirection: 'row',
-    marginBottom: 30
+    marginBottom: 30,
+    zIndex: 2
   },
 
   hour: {
@@ -165,7 +206,8 @@ export default StyleSheet.create({
   },
 
   sessionBtn: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#ccc',
+    zIndex: 99
   },
 
   sessionText: {
