@@ -50,53 +50,10 @@ function Schedule ({ navigation }) {
   const [currentDisplay, setCurrentDisplay] = useState(new Date().getDate() + '/' + months[new Date().getMonth()] + '/' + years[1])
 
   useEffect(() => {
-    console.log('2 currentYear >>>> ' + currentYear)
-
-    if(!isInitialMount.current){
-      handleMonth(0)
-    }
-
-  }, [currentYear])
-
-  useEffect(() => {
-    console.log('3 currentMonth >>>> ' + currentMonth)
-
-  }, [currentMonth])
-
-  useEffect(() => {
-    console.log('4 days >>>> ' + JSON.stringify(days))
-
-    if(!isInitialMount.current){
-
-      setTimeout(() => {      
-        handleDay(0)
-      }, 5000)
-    }
-  }, [days])
-
-  useEffect(() => {
-    console.log('5 currentDay >>>> ' + currentDay)
-  }, [currentDay])
-
-  useEffect(() => {
-    console.log('6 currentDisplay >>>> ' + currentDisplay)
-    console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
-
-    setTimeout(() => {      
-      console.log('timeout display ?')
-      console.log('6 currentDisplay >>>> ' + currentDisplay)
-      console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
-    }, 5000)
 
     getCurrentSchedule()
 
   }, [currentDisplay])
-
-  useEffect(() => {
-    console.log('7 currentSchedule >>>> ' + typeof currentSchedule)
-
-    //subscribeToNewRituals(ritual => setCurrentSchedule([...currentSchedule, ritual]))
-  }, [currentSchedule])
 
   // useEffect(() => {
   //   subscribeToNewPlaces(place => setPlaces([...places, place]))
@@ -104,26 +61,25 @@ function Schedule ({ navigation }) {
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewYears !== undefined){
-      console.log('8 scrollViewYears >>>> ' + typeof scrollViewYears)
-      console.log('handle YEAR on call now')
+      console.log('scrollViewYears >>>> ' + typeof scrollViewYears)
       setTimeout(() => { handleYear(currentYear) }, 500)
+      //handleYear(currentYear)
     }
   }, [scrollViewYears])
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewMonths !== undefined){
-      console.log('9 scrollViewMonths >>>> ' + typeof scrollViewMonths)
-      console.log('handle MONTH on call now')
+      console.log('scrollViewMonths >>>> ' + typeof scrollViewMonths)
       setTimeout(() => { handleMonth(currentMonth) }, 500)
+      //handleMonth(currentMonth)
     }
   }, [scrollViewMonths])
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewDays !== undefined){
-      console.log('10 scrollViewDays >>>> ' + typeof scrollViewDays)
-      console.log('handle DAY on call now')
-      setTimeout(() => { handleDay(currentDay - 1) }, 500)      
-      setTimeout(() => { isInitialMount.current = false }, 1000)
+      console.log('scrollViewDays >>>> ' + typeof scrollViewDays)
+      setTimeout(() => { handleDay(currentDay - 1) }, 500)
+      setTimeout(() => { isInitialMount.current = false }, 750)
     }
   }, [scrollViewDays])
 
@@ -133,8 +89,6 @@ function Schedule ({ navigation }) {
   }
 
   async function getCurrentSchedule() {
-
-    console.log('por favor uma chamada apenas')
 
     let isDayEmpity = true
     
@@ -183,68 +137,57 @@ function Schedule ({ navigation }) {
     }
     setupWebsocket()
     setCurrentSchedule(schedule)
-    //return schedule
   }
 
-  // handleScroll = () => {
-  //   console.log('***** handleScroll **** apenas uma vez')    
-  // }
+  const handleScrolling = (scroll, type) => {
+
+    let index = scroll.nativeEvent.contentOffset.x / 78
+
+    if(type === 'years')
+      handleYear(index)
+
+    if(type === 'months')
+      handleMonth(index)
+
+    if(type === 'days')
+      handleDay(index)
+  }
 
   const handleYear = (btn) => {
-    console.log(' ')
-    console.log(' ')
-    console.log(' ')
-    console.log('ANO: ')
-    console.log('index = ' + btn)
-    console.log('name = ' + years[btn])
+    console.log('ANO: ' + years[btn])
 
     if(!isInitialMount.current){
-      console.log('year got pressed')
       setCurrentYear(btn)
-      months[new Date().getMonth()]
       setCurrentMonth(1)
       setDays(getDaysOfDate(currentYear, 0))
       setCurrentDay(1)
       setCurrentDisplay((1) + '/' + months[0] + '/' + years[currentYear])
+      handleScrollViews(scrollViewMonths, 0)
+      handleScrollViews(scrollViewDays, 0)  
     }
-    console.log('positioning the scroll')
     handleScrollViews(scrollViewYears, btn)
-    handleScrollViews(scrollViewMonths, btn)
-
   }
 
   const handleMonth = (btn) => {
-    console.log(' ')
-    console.log(' ')
-    console.log(' ')
     console.log('MÊS: ' + months[btn])
 
     if(!isInitialMount.current){
-      console.log('month got pressed')
       setCurrentMonth(btn)
       setDays(getDaysOfDate(currentYear, btn))
       setCurrentDay(1)
       setCurrentDisplay(1 + '/' + months[btn] + '/' + years[currentYear])
-      // setCurrentDay(1)
-      // setDays()
+      handleScrollViews(scrollViewDays, 0)
     }
-    console.log('positioning the scroll')
     handleScrollViews(scrollViewMonths, btn)
   }
 
   const handleDay = (btn) => {
-    console.log(' ')
-    console.log(' ')
-    console.log(' ')
     console.log('DIA: ' + days[btn])
 
     if(!isInitialMount.current){
-      console.log('day got pressed')
       setCurrentDay(btn + 1)
       setCurrentDisplay((btn + 1) + '/' + months[currentMonth] + '/' + years[currentYear])
-
     }
-    console.log('positioning the scroll')
     handleScrollViews(scrollViewDays, btn)
   }
 
@@ -252,25 +195,6 @@ function Schedule ({ navigation }) {
 
     index = index * 78
     scrollViewElement.scrollTo({x: index, animated: true})
-    console.log('Are we good?')
-    console.log(' ')
-
-    // if(!isInitialMount.current){
-    //   setTimeout(() => { updateDateDisplay() }, 3000)
-    // }
-  }
-
-  const updateDateDisplay = () => {
-
-    console.log(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
-    setCurrentDisplay(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
-
-    // if(currentDisplay !== currentDay + '/' + months[currentMonth] + '/' + years[currentYear]){
-    //   setCurrentDisplay(currentDay + '/' + months[currentMonth] + '/' + years[currentYear])
-    // } else {
-    //   console.log('prevented unecessary change on date display')
-    //   console.log(currentDisplay)
-    // }
   }
 
   const toggleFavoriteTimes = (index) => {
@@ -278,10 +202,8 @@ function Schedule ({ navigation }) {
   }
 
   if (!currentSchedule) {
-    console.log('*********************** return null')
     return null
   }
-  console.log('*********************** chegou aqui??????')
 
   return (
 
@@ -311,23 +233,14 @@ function Schedule ({ navigation }) {
           scrollToOverflowEnabled={true}
           scrollEventThrottle={0}
           snapToInterval={78}
-          //onMomentumScrollEnd={handleScroll}
-          //ref={scrollView}
-          // ref={(ref) => scrollView = ref}
+          onMomentumScrollEnd={(obj) => { handleScrolling(obj, 'years') }}
           ref={(ref) => setScrollViewYears(ref)}
-
-          //ref={scroller => {myScroller = scroller}}
-          /*
-          ref={scroller => {
-            this.scroller = scroller;
-          }}
-          */
         >
             {years.map((year, index) => (
 
               <TouchableOpacity
                 style={[styles.btn, styles.btnDay, ]}
-                onPress={() => { handleYear(index, year) }}
+                onPress={() => { handleYear(index) }}
                 key={index}
               >
                 <Text style={[styles.btnTextLite]} color='#fff'>{year}</Text>
@@ -348,23 +261,14 @@ function Schedule ({ navigation }) {
           scrollToOverflowEnabled={true}
           scrollEventThrottle={0}
           snapToInterval={78}
-          //onMomentumScrollEnd={handleScroll}
-          //ref={scrollView}
-          // ref={(ref) => scrollView = ref}
+          onMomentumScrollEnd={(obj) => { handleScrolling(obj, 'months') }}
           ref={(ref) => setScrollViewMonths(ref)}
-
-          //ref={scroller => {myScroller = scroller}}
-          /*
-          ref={scroller => {
-            this.scroller = scroller;
-          }}
-          */
         >
             {months.map((month, index) => (
 
               <TouchableOpacity
                 style={[styles.btn, styles.btnDay, ]}
-                onPress={() => { handleMonth(index, index) }}
+                onPress={() => { handleMonth(index) }}
                 key={index}
               >
                 <Text style={[styles.btnTextLite]} color='#fff'>{month}</Text>
@@ -385,23 +289,14 @@ function Schedule ({ navigation }) {
           scrollToOverflowEnabled={true}
           scrollEventThrottle={0}
           snapToInterval={78}
-          //onMomentumScrollEnd={handleScroll}
-          //ref={scrollView}
-          // ref={(ref) => scrollView = ref}
+          onMomentumScrollEnd={(obj) => { handleScrolling(obj, 'days') }}
           ref={(ref) => setScrollViewDays(ref)}
-
-          //ref={scroller => {myScroller = scroller}}
-          /*
-          ref={scroller => {
-            this.scroller = scroller;
-          }}
-          */
         >
             {days.map((day, index) => (
 
               <TouchableOpacity
                 style={[styles.btn, styles.btnDay]}
-                onPress={() => { handleDay(index, day) }}
+                onPress={() => { handleDay(index) }}
                 key={index}
               >
                 <Text style={[styles.btnTextLite]} color='#fff'>{day}</Text>
@@ -418,8 +313,6 @@ function Schedule ({ navigation }) {
         style={styles.coverImg}
         source={{ uri: 'https://patrimonioespiritual.files.wordpress.com/2016/01/img_1565.jpg?w=1180&h=786' }}
       /> */}
-
-      {/* <View style={styles.coverImg} /> */}
 
       <View style={styles.bg}/>
 

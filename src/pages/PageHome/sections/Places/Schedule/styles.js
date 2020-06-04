@@ -11,7 +11,7 @@ export default StyleSheet.create({
   lineMark: {
     height: '100%',
     // borderColor: '#737380',
-    borderColor: '#000',
+    borderColor: '#4b0082',
     borderRightWidth: 1,
     width: 84,
     position: 'absolute',
@@ -30,7 +30,10 @@ export default StyleSheet.create({
     width: '100%',
     // height: 180,
     height: 225,
-    backgroundColor: 'green',
+    //backgroundColor: '#ccc',
+    backgroundColor: '#ffa500',
+    backgroundColor: '#fff',
+
     zIndex: 1,
     opacity: 1
 
