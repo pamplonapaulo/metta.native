@@ -166,11 +166,16 @@ export default StyleSheet.create({
     marginRight: 20
   },
 
-  blockedArea: {
-    width: 282,
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
+  freeDay: {
+    marginRight: 20,
+    backgroundColor: '#E9EAED'
   },
+
+  busyDay: {
+    marginRight: 20,
+    backgroundColor: '#5D5D5D',
+  },
+
 
   hiddenBtnDay: {
     marginRight: 0,
@@ -179,9 +184,21 @@ export default StyleSheet.create({
   },
 
   btnTextLite: {
-    color: '#000',
+    color: '#ccc',
     fontSize: 19,
     marginTop: 3
+  },
+
+  btnTextLiteWknd: {
+    color: 'green',
+    fontSize: 19,
+    marginTop: 3
+  },
+
+  blockedArea: {
+    width: 282,
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
 
   row: {

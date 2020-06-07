@@ -28,9 +28,13 @@ function Schedule ({ navigation }) {
   const [scrollViewMonths, setScrollViewMonths] = useState()
   const [scrollViewDays, setScrollViewDays] = useState()
 
+  const [ritualDays, setRitualDays] = useState([])
+
   const isInitialMount = useRef(true)
 
   let favoriteTimes = [ false, false, false, false, false, false, false, false, false, false, false ]
+
+  let firstMount = true
   
   const months = [
     'Jan',
@@ -48,6 +52,14 @@ function Schedule ({ navigation }) {
   ]
 
   const [currentDisplay, setCurrentDisplay] = useState(new Date().getDate() + '/' + months[new Date().getMonth()] + '/' + years[1])
+
+  useEffect(() => {
+
+    if(!firstMount){
+      getCurrentSchedule()
+    }
+
+  }, [days])
 
   useEffect(() => {
 
@@ -98,29 +110,61 @@ function Schedule ({ navigation }) {
       }
     })
 
-    const monthMatch = (element) => element == currentMonth;
-    const dayMatch = (element) => element == currentDay;
+    // mês do ano de 0 a 11
+    const monthMatch = (element) => element == currentMonth + 1
+
+    // dia do mês de 1 a 31
+    const dayMatch = (element) => element == currentDay
+
+    // dia da semana de 0 a 6
+    const dayOfWeekMatch = (element) => element == new Date(years[currentYear],currentMonth,currentDay).getDay()
+
+    // semana do mês de 0 a 4
+    const weekOfMonthMatch = (element) => element == Math.floor(new Date(years[currentYear],currentMonth,currentDay).getDate() / 7)
 
     let schedule = []
 
     for (let y=0; y<response.data.length; y++){
 
-      let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
-      let responseDays = arrayBuilder(response.data[y].daysOfMonths)
+      // concentração ou ressureição do mestre
+      if(response.data[y].daysOfWeeks === "[]"){
+        let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
+        let responseDays = arrayBuilder(response.data[y].daysOfMonths)
+  
+        if (responseMonths.some(monthMatch) && responseDays.some(dayMatch)){
+          isDayEmpity = false
+  
+          schedule.push({
+            ritual_id: response.data[y].id,
+            display: 'on',
+            title: response.data[y].title,
+            paragraph: response.data[y].paragraph,
+            time: hourSanitizer(response.data[y].hoursOfDays),
+            hours: response.data[y].sessionLength,
+            price: response.data[y].chargeValue
+          })
+        }
+      }
 
-      if (responseMonths.some(monthMatch) && responseDays.some(dayMatch)){
+      if(response.data[y].daysOfWeeks !== "[]"){
+        let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
+        let responseWeeks = arrayBuilder(response.data[y].weeksOfMonths)
+        let responseDays = arrayBuilder(response.data[y].daysOfWeeks)
 
-        isDayEmpity = false
-
-        schedule.push({
-          ritual_id: response.data[y].id,
-          display: 'on',
-          title: response.data[y].title,
-          paragraph: response.data[y].paragraph,
-          time: hourSanitizer(response.data[y].hoursOfDays),
-          hours: response.data[y].sessionLength,
-          price: response.data[y].chargeValue
-        })
+        // sessão de escala ou dia das mães
+        if (responseDays.some(dayOfWeekMatch) && responseWeeks.some(weekOfMonthMatch) && responseMonths.some(monthMatch)){
+          isDayEmpity = false
+  
+          schedule.push({
+            ritual_id: response.data[y].id,
+            display: 'on',
+            title: response.data[y].title,
+            paragraph: response.data[y].paragraph,
+            time: hourSanitizer(response.data[y].hoursOfDays),
+            hours: response.data[y].sessionLength,
+            price: response.data[y].chargeValue
+          })
+        }
       }
     }
 
@@ -129,14 +173,74 @@ function Schedule ({ navigation }) {
         ritual_id: 'fake',
         display: 'off',
         title: 'Sem sessões',
-        paragraph: '',
+        paragraph: 'Dia ' + currentDay + ' de ' + months[currentMonth] + ' não contém eventos.',
         time: '',
         hours: '',
         price: ''    
       })
     }
+    console.log(days)
     setupWebsocket()
     setCurrentSchedule(schedule)
+
+    console.log('novo teste:')
+    if(firstMount){
+      getMounthRituals()
+    }
+  }
+
+  async function getMounthRituals() {
+
+    let newDays = []
+
+    const response = await api.get('/rituals', {
+      params: {
+        place_id: place.id
+      }
+    })
+
+    const monthMatch = (element) => element == currentMonth + 1
+
+    for(let i=0; i<days.length; i++){
+
+      let newDay = {
+        number: days[i].number,
+        hasRitual: false,
+        isWeekend: days[i].isWeekend,
+        dayOfWeek: days[i].dayOfWeek,
+        weekOfMonth: days[i].weekOfMonth
+      }
+
+      const dayMatch = (element) => element == newDay.number
+      const weekDayMatch = (element) => element == newDay.dayOfWeek
+      const weeksOfMonthMatch = (element) => element == newDay.weekOfMonth 
+
+      newDays.push(newDay)
+
+      for (let y=0; y<response.data.length; y++){
+
+        let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
+        let responseDaysOfMonth = arrayBuilder(response.data[y].daysOfMonths)
+        let responseDaysOfWeek = arrayBuilder(response.data[y].daysOfWeeks)
+        let responseWeeksOfMonth = arrayBuilder(response.data[y].weeksOfMonths)
+  
+        if (responseMonths.some(monthMatch)){
+
+          if (responseDaysOfMonth.some(dayMatch)){
+            newDays[i].hasRitual = true
+          }
+
+          if (responseDaysOfWeek.some(weekDayMatch) && responseWeeksOfMonth.some(weeksOfMonthMatch)){
+            newDays[i].hasRitual = true
+          }
+        }
+      }
+    }
+    firstMount = false
+    console.log(newDays)
+    //setDays(newDays)
+    setRitualDays(newDays)
+    setupWebsocket()
   }
 
   const handleScrolling = (scroll, type) => {
@@ -159,11 +263,12 @@ function Schedule ({ navigation }) {
     if(!isInitialMount.current){
       setCurrentYear(btn)
       setCurrentMonth(1)
-      setDays(getDaysOfDate(currentYear, 0))
+      setDays(getDaysOfDate(years[btn], 0))
       setCurrentDay(1)
       setCurrentDisplay((1) + '/' + months[0] + '/' + years[currentYear])
       handleScrollViews(scrollViewMonths, 0)
-      handleScrollViews(scrollViewDays, 0)  
+      handleScrollViews(scrollViewDays, 0)
+      // getMounthRituals()
     }
     handleScrollViews(scrollViewYears, btn)
   }
@@ -173,10 +278,11 @@ function Schedule ({ navigation }) {
 
     if(!isInitialMount.current){
       setCurrentMonth(btn)
-      setDays(getDaysOfDate(currentYear, btn))
+      setDays(getDaysOfDate(years[currentYear], btn))
       setCurrentDay(1)
       setCurrentDisplay(1 + '/' + months[btn] + '/' + years[currentYear])
       handleScrollViews(scrollViewDays, 0)
+      // getMounthRituals()
     }
     handleScrollViews(scrollViewMonths, btn)
   }
@@ -292,14 +398,22 @@ function Schedule ({ navigation }) {
           onMomentumScrollEnd={(obj) => { handleScrolling(obj, 'days') }}
           ref={(ref) => setScrollViewDays(ref)}
         >
-            {days.map((day, index) => (
+            {ritualDays.map((day, index) => (
 
               <TouchableOpacity
-                style={[styles.btn, styles.btnDay]}
+                //style={day.isWeekend === true ? [styles.btn, styles.wknd] : [styles.btn, styles.btnDay]}
+
+                style={day.hasRitual === true ? [styles.btn, styles.busyDay] : [styles.btn, styles.freeDay]}
+
+                //style={[styles.btn, styles.btnDay]}
                 onPress={() => { handleDay(index) }}
                 key={index}
               >
-                <Text style={[styles.btnTextLite]} color='#fff'>{day}</Text>
+                <Text
+                //style={[styles.btnTextLite]}
+                style={day.isWeekend === true ? [styles.btnTextLiteWknd] : [styles.btnTextLite]}
+                //color='#fff'
+                >{day.number}</Text>
               </TouchableOpacity>
               )
             )}
