@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native'
 
 export default StyleSheet.create({
+
   pageContainer: {
     flex: 1,
     paddingHorizontal: 0,
@@ -11,32 +12,21 @@ export default StyleSheet.create({
   lineMark: {
     height: '100%',
     // borderColor: '#737380',
-    borderColor: '#4b0082',
-    borderRightWidth: 1,
+    borderColor: '#000',
+    borderRightWidth: 2,
     width: 84,
     position: 'absolute',
-    zIndex: 2
-  },
-
-  coverImg: {
-    width: '100%',
-    // height: 180,
-    height: 225,
-    zIndex: 1,
-    opacity: 0.5
+    zIndex: 2,
+    transform: [{ translateX: 1 }]
   },
 
   bg: {
     width: '100%',
-    // height: 180,
-    height: 225,
-    //backgroundColor: '#ccc',
-    backgroundColor: '#ffa500',
-    backgroundColor: '#fff',
-
+    height: 220,
     zIndex: 1,
-    opacity: 1
-
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: '#D3CDD7',
   },
 
   textShadow: {
@@ -45,74 +35,30 @@ export default StyleSheet.create({
     textShadowRadius: 10
   },
 
-  inative: {
-    color: '#ccc'
-  },
-
-
-  widthFull: {
-    width: '100%'
-  },
-
-  centered: {
-    textAlign: 'center'
-  },
-
-  left: {
-    paddingLeft: 24,
-    textAlign: 'left'
-  },
-
-  right: {
-    textAlign: 'right'
-    // width: '100%'
-  },
-
-  topPadding: {
-    paddingTop: 24
-  },
-
-  rightPadding: {
-    paddingRight: 24
-  },
-
-  verticalBottom: {
-    justifyContent: 'flex-end'
-  },
-
-  headerDayTop: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: 'bold'
-  },
-
-  headerDayBottom: {
-    fontSize: 11,
-    color: '#fff',
-    fontWeight: 'bold'
-  },
-
-  headerDay: {
-    paddingHorizontal: 6,
-    marginBottom: -40,
-    paddingTop: 5,
+  currentDisplayWrapper: {
+    textAlign: 'center',
     width: '100%',
-    height: 40,
-    zIndex: 99,
-    flexDirection: 'row'    
+    height: 20,
+    zIndex: 999,
+    display: 'flex',
+    alignItems: 'flex-end',
+    flex: 1,
+    backgroundColor: 'blue',
+    transform: [{ translateY: -1 }]
+  },
+
+  currentDisplay: {
+    fontSize: 13,
+    backgroundColor: '#D3CDD7',
+    paddingHorizontal: 10
   },
 
   days: {
     paddingLeft: 55,
     paddingBottom: 75,
-    //backgroundColor: 'orange',
     top: 150,
     zIndex: 99,
     position: 'absolute',
-    // flexDirection: 'row',
-    // justifyContent: 'space-between',
-    
-    //transform: [{ translateX: (-78 * 2) }]
   },
 
   months: {
@@ -134,7 +80,7 @@ export default StyleSheet.create({
   btn: {
     borderWidth: 1,
     borderColor: '#ccc',
-    backgroundColor: '#E6F1E3',
+    backgroundColor: '#9400D3',
     width: 58,
     height: 58,
     borderRadius: 29,
@@ -143,11 +89,14 @@ export default StyleSheet.create({
     flexDirection: 'column',
     elevation: 4,
     shadowOffset: { width: 5, height: 5 },
-    // shadowColor: 'grey',
     shadowColor: 'red',
-    //shadowOpacity: 0.5,
     shadowOpacity: 1,
-    shadowRadius: 10
+    shadowRadius: 10,
+    marginRight: 20
+  },
+
+  btnWknd: {
+    backgroundColor: '#000',
   },
 
   btnOff: {
@@ -162,8 +111,35 @@ export default StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  btnDay: {
-    marginRight: 20
+  btnMonth: {
+    backgroundColor: '#4b0082'
+  },
+
+  btnYear: {
+    backgroundColor: '#0000ff'
+  },
+
+  ritualMarker: {
+    position: 'absolute',
+    display: 'flex',
+    flex: 1,
+    color: 'red',
+    fontSize: 15,
+    transform: [
+      { translateY: -22 },
+      { translateX: 19 }
+    ]
+  },
+
+  ritualMarkerOff: {
+    display: 'none',
+    color: 'transparent',
+    opacity: 0
+  },
+
+  btnTextLite: {
+    color: '#ccc',
+    fontSize: 19
   },
 
   blockedArea: {
@@ -172,25 +148,9 @@ export default StyleSheet.create({
     borderColor: 'transparent',
   },
 
-  hiddenBtnDay: {
-    marginRight: 0,
-    width: 0,
-    borderWidth: 0
-  },
-
-  btnTextLite: {
-    color: '#000',
-    fontSize: 19,
-    marginTop: 3
-  },
-
-  row: {
-    flexDirection: 'row'
-  },
-
   stack: {
-    paddingTop: 80,
-    paddingBottom: 130,
+    paddingTop: 30,
+    marginBottom: 220,
     flexDirection: 'column',
     zIndex: 99
   },
@@ -210,7 +170,8 @@ export default StyleSheet.create({
 
   sessionBtn: {
     backgroundColor: '#ccc',
-    zIndex: 99
+    zIndex: 99,
+    marginRight: 0
   },
 
   sessionText: {
