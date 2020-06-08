@@ -2,14 +2,15 @@
 
 const hourSanitizer = (hour) => {
 
-  let finalString
+  let finalString = hour.toString()
 
-  if(hour.length === 6){
-    finalString = hour.slice(1,3) + ':' + hour.slice(-3, -1)
+  if(finalString.length === 4){
+    finalString = finalString.slice(0,2) + ':' + finalString.slice(-2)
   }
-  if(hour.length === 5){
-    finalString = hour.slice(1,2) + ':' + hour.slice(-3, -1)
+  if(finalString.length === 3){
+    finalString = finalString.slice(0,1) + ':' + finalString.slice(-2)
   }
+
   return finalString
 }
 

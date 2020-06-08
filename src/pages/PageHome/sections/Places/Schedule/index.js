@@ -4,9 +4,10 @@ import { Image, View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'r
 import api from '../../../../../services/api'
 import { connectRituals, disconnect, subscribeToNewRituals } from '../../../../../services/socket'
 
-import { AntDesign } from '@expo/vector-icons'
+import { AntDesign, FontAwesome5 } from '@expo/vector-icons'
 
 import arrayBuilder from '../../../../../utils/arrayBuilder'
+import removeBraces from '../../../../../utils/removeBraces'
 import hourSanitizer from '../../../../../utils/hourSanitizer'
 import getDaysOfDate from '../../../../../utils/getDaysOfDate'
 
@@ -73,23 +74,18 @@ function Schedule ({ navigation }) {
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewYears !== undefined){
-      console.log('scrollViewYears >>>> ' + typeof scrollViewYears)
       setTimeout(() => { handleYear(currentYear) }, 500)
-      //handleYear(currentYear)
     }
   }, [scrollViewYears])
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewMonths !== undefined){
-      console.log('scrollViewMonths >>>> ' + typeof scrollViewMonths)
       setTimeout(() => { handleMonth(currentMonth) }, 500)
-      //handleMonth(currentMonth)
     }
   }, [scrollViewMonths])
 
   useEffect(() => {
     if(isInitialMount.current && scrollViewDays !== undefined){
-      console.log('scrollViewDays >>>> ' + typeof scrollViewDays)
       setTimeout(() => { handleDay(currentDay - 1) }, 500)
       setTimeout(() => { isInitialMount.current = false }, 750)
     }
@@ -110,23 +106,15 @@ function Schedule ({ navigation }) {
       }
     })
 
-    // mês do ano de 0 a 11
     const monthMatch = (element) => element == currentMonth + 1
-
-    // dia do mês de 1 a 31
     const dayMatch = (element) => element == currentDay
-
-    // dia da semana de 0 a 6
     const dayOfWeekMatch = (element) => element == new Date(years[currentYear],currentMonth,currentDay).getDay()
-
-    // semana do mês de 0 a 4
     const weekOfMonthMatch = (element) => element == Math.floor(new Date(years[currentYear],currentMonth,currentDay).getDate() / 7)
 
     let schedule = []
 
     for (let y=0; y<response.data.length; y++){
 
-      // concentração ou ressureição do mestre
       if(response.data[y].daysOfWeeks === "[]"){
         let responseMonths = arrayBuilder(response.data[y].monthsOfYears)
         let responseDays = arrayBuilder(response.data[y].daysOfMonths)
@@ -139,7 +127,7 @@ function Schedule ({ navigation }) {
             display: 'on',
             title: response.data[y].title,
             paragraph: response.data[y].paragraph,
-            time: hourSanitizer(response.data[y].hoursOfDays),
+            time: removeBraces(response.data[y].hoursOfDays),
             hours: response.data[y].sessionLength,
             price: response.data[y].chargeValue
           })
@@ -151,7 +139,6 @@ function Schedule ({ navigation }) {
         let responseWeeks = arrayBuilder(response.data[y].weeksOfMonths)
         let responseDays = arrayBuilder(response.data[y].daysOfWeeks)
 
-        // sessão de escala ou dia das mães
         if (responseDays.some(dayOfWeekMatch) && responseWeeks.some(weekOfMonthMatch) && responseMonths.some(monthMatch)){
           isDayEmpity = false
   
@@ -160,7 +147,7 @@ function Schedule ({ navigation }) {
             display: 'on',
             title: response.data[y].title,
             paragraph: response.data[y].paragraph,
-            time: hourSanitizer(response.data[y].hoursOfDays),
+            time: removeBraces(response.data[y].hoursOfDays),
             hours: response.data[y].sessionLength,
             price: response.data[y].chargeValue
           })
@@ -179,25 +166,44 @@ function Schedule ({ navigation }) {
         price: ''    
       })
     }
-    console.log(days)
     setupWebsocket()
-    setCurrentSchedule(schedule)
 
-    console.log('novo teste:')
+    let orderedRituals = schedule.sort((a, b) => (a.time > b.time) ? 1 : (a.time === b.time) ? ((a.ritual_id > b.ritual_id) ? 1 : -1) : -1 )
+
+    let final = []
+
+    for(let i=0; i<orderedRituals.length; i++){
+      let el = {
+        ritual_id: orderedRituals[i].id,
+        display: 'on',
+        title: orderedRituals[i].title,
+        paragraph: orderedRituals[i].paragraph,
+        time: hourSanitizer(orderedRituals[i].time),
+        hours: orderedRituals[i].sessionLength,
+        price: orderedRituals[i].chargeValue
+      }
+      final.push(el)
+    }
+
+    setCurrentSchedule(final)
+
     if(firstMount){
-      getMounthRituals()
+      getMounthRituals(response)
     }
   }
 
-  async function getMounthRituals() {
+  async function getMounthRituals(response) {
 
     let newDays = []
 
-    const response = await api.get('/rituals', {
-      params: {
-        place_id: place.id
-      }
-    })
+    if(!firstMount){
+    
+      const response = await api.get('/rituals', {
+        params: {
+          place_id: place.id
+        }
+      })
+    }
 
     const monthMatch = (element) => element == currentMonth + 1
 
@@ -237,8 +243,6 @@ function Schedule ({ navigation }) {
       }
     }
     firstMount = false
-    console.log(newDays)
-    //setDays(newDays)
     setRitualDays(newDays)
     setupWebsocket()
   }
@@ -258,7 +262,6 @@ function Schedule ({ navigation }) {
   }
 
   const handleYear = (btn) => {
-    console.log('ANO: ' + years[btn])
 
     if(!isInitialMount.current){
       setCurrentYear(btn)
@@ -268,13 +271,11 @@ function Schedule ({ navigation }) {
       setCurrentDisplay((1) + '/' + months[0] + '/' + years[currentYear])
       handleScrollViews(scrollViewMonths, 0)
       handleScrollViews(scrollViewDays, 0)
-      // getMounthRituals()
     }
     handleScrollViews(scrollViewYears, btn)
   }
 
   const handleMonth = (btn) => {
-    console.log('MÊS: ' + months[btn])
 
     if(!isInitialMount.current){
       setCurrentMonth(btn)
@@ -282,13 +283,11 @@ function Schedule ({ navigation }) {
       setCurrentDay(1)
       setCurrentDisplay(1 + '/' + months[btn] + '/' + years[currentYear])
       handleScrollViews(scrollViewDays, 0)
-      // getMounthRituals()
     }
     handleScrollViews(scrollViewMonths, btn)
   }
 
   const handleDay = (btn) => {
-    console.log('DIA: ' + days[btn])
 
     if(!isInitialMount.current){
       setCurrentDay(btn + 1)
@@ -314,22 +313,8 @@ function Schedule ({ navigation }) {
   return (
 
     <View style={styles.pageContainer}>
+
       <View style={styles.lineMark}></View>
-      <View style={styles.headerDay}>
-        <View style={[styles.right, styles.widthFull]}>
-
-          <View style={[styles.row, styles.right]}>
-            <Text style={[
-              styles.right,
-              styles.widthFull,
-              styles.textShadow,
-              styles.headerDayTop
-            ]}
-          >{currentDisplay}</Text>
-          </View>
-
-        </View>
-      </View>
 
       <SafeAreaView>
         <ScrollView
@@ -345,11 +330,11 @@ function Schedule ({ navigation }) {
             {years.map((year, index) => (
 
               <TouchableOpacity
-                style={[styles.btn, styles.btnDay, ]}
+                style={[styles.btn, styles.btnYear ]}
                 onPress={() => { handleYear(index) }}
                 key={index}
               >
-                <Text style={[styles.btnTextLite]} color='#fff'>{year}</Text>
+                <Text style={[styles.btnTextLite]}>{year}</Text>
               </TouchableOpacity>
               )
             )}
@@ -373,11 +358,11 @@ function Schedule ({ navigation }) {
             {months.map((month, index) => (
 
               <TouchableOpacity
-                style={[styles.btn, styles.btnDay, ]}
+                style={[styles.btn, styles.btnMonth ]}
                 onPress={() => { handleMonth(index) }}
                 key={index}
               >
-                <Text style={[styles.btnTextLite]} color='#fff'>{month}</Text>
+                <Text style={[styles.btnTextLite]}>{month}</Text>
               </TouchableOpacity>
               )
             )}
@@ -401,18 +386,18 @@ function Schedule ({ navigation }) {
             {ritualDays.map((day, index) => (
 
               <TouchableOpacity
-                //style={day.isWeekend === true ? [styles.btn, styles.wknd] : [styles.btn, styles.btnDay]}
-
-                style={day.hasRitual === true ? [styles.btn, styles.busyDay] : [styles.btn, styles.freeDay]}
-
-                //style={[styles.btn, styles.btnDay]}
+                style={day.isWeekend === true ? [styles.btn, styles.btnWknd] : [styles.btn]}
                 onPress={() => { handleDay(index) }}
                 key={index}
               >
+
+                <FontAwesome5
+                  style={day.hasRitual === true ? [styles.ritualMarker] : [styles.ritualMarkerOff]}
+                  name={'star-of-life'}
+                />
+
                 <Text
-                //style={[styles.btnTextLite]}
-                style={day.isWeekend === true ? [styles.btnTextLiteWknd] : [styles.btnTextLite]}
-                //color='#fff'
+                  style={[styles.btnTextLite]}
                 >{day.number}</Text>
               </TouchableOpacity>
               )
@@ -423,16 +408,17 @@ function Schedule ({ navigation }) {
         </ScrollView>
       </SafeAreaView>
       
-      {/* <Image
-        style={styles.coverImg}
-        source={{ uri: 'https://patrimonioespiritual.files.wordpress.com/2016/01/img_1565.jpg?w=1180&h=786' }}
-      /> */}
-
       <View style={styles.bg}/>
+
+      <View style={styles.currentDisplayWrapper}>
+        <Text style={[styles.currentDisplay]}>{currentDisplay}</Text>
+      </View>
 
       <SafeAreaView>
 
-        <ScrollView style={styles.stack}>
+        <ScrollView
+          style={styles.stack}
+        >
 
           {currentSchedule.map((ritual, index) => (
 
